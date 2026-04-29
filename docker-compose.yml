@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:15
+    container_name: food-db
+    environment:
+      POSTGRES_USER: fcuser
+      POSTGRES_PASSWORD: fcpass
+      POSTGRES_DB: fooddb
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
