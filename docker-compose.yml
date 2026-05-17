@@ -1,4 +1,15 @@
 services:
+  app:
+    build: .
+    container_name: food-control-api
+    depends_on:
+      - db
+    environment:
+      HTTP_ADDR: ":8080"
+      DATABASE_URL: postgres://fcuser:fcpass@db:5432/fooddb
+    ports:
+      - "8080:8080"
+
   db:
     image: postgres:15
     container_name: food-db
@@ -10,6 +21,7 @@ services:
       - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
 
 volumes:
   db_data:

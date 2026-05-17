@@ -1,18 +1,33 @@
 package db
 
 import (
-    "context"
-    "log"
-    "github.com/jackc/pgx/v5/pgxpool"
+	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New() *pgxpool.Pool {
-    connStr := "postgres://fcuser:fcpass@localhost:5433/fooddb"
+func New(ctx context.Context, connString string) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
 
-    pool, err := pgxpool.New(context.Background(), connStr)
-    if err != nil {
-        log.Fatal(err)
-    }
+	config.MaxConns = 10
+	config.MinConns = 1
+	config.MaxConnLifetime = time.Hour
+	config.MaxConnIdleTime = 30 * time.Minute
+	config.HealthCheckPeriod = time.Minute
 
-    return pool
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, err
+	}
+
+	return pool, nil
 }
