@@ -17,6 +17,25 @@ func (s *Server) listProducts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, products)
 }
 
+func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	product, err := s.repo.GetProduct(r.Context(), id)
+	if errors.Is(err, repository.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "product not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get product")
+		return
+	}
+	writeJSON(w, http.StatusOK, product)
+}
+
 func (s *Server) createProduct(w http.ResponseWriter, r *http.Request) {
 	var input models.CreateProductRequest
 	if err := readJSON(r, &input); err != nil {

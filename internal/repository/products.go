@@ -30,6 +30,31 @@ func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error)
 	return products, rows.Err()
 }
 
+func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, error) {
+	var product models.Product
+
+	err := r.db.QueryRow(ctx, `
+		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
+		FROM products
+		WHERE id = $1`,
+		id,
+	).Scan(
+		&product.ID,
+		&product.Name,
+		&product.Description,
+		&product.Quantity,
+		&product.Unit,
+		&product.ExpirationDate,
+		&product.CreatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Product{}, ErrNotFound
+	}
+
+	return product, err
+}
+
 func (r *Repository) CreateProduct(ctx context.Context, input models.CreateProductRequest) (models.Product, error) {
 	var product models.Product
 	err := r.db.QueryRow(ctx, `

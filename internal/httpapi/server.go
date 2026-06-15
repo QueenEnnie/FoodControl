@@ -27,6 +27,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) routes() {
 	s.mux.HandleFunc("GET /health", s.health)
 	s.mux.HandleFunc("GET /products", s.listProducts)
+	s.mux.HandleFunc("GET /products/{id}", s.getProduct)
 	s.mux.HandleFunc("POST /products", s.createProduct)
 	s.mux.HandleFunc("PUT /products/{id}", s.updateProduct)
 	s.mux.HandleFunc("DELETE /products/{id}", s.deleteProduct)

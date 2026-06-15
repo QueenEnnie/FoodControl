@@ -45,6 +45,7 @@ GET /health
 
 ```http
 GET /products
+GET /products/{id}
 POST /products
 PUT /products/{id}
 DELETE /products/{id}
@@ -61,6 +62,15 @@ Example product:
   "expiration_date": "2026-05-25T00:00:00Z"
 }
 ```
+
+Get one product:
+
+```http
+GET /products/1
+```
+
+Successful product lookups return `200 OK` with the product.
+If the product does not exist, the API returns `404 Not Found`.
 
 Update an existing product:
 
