@@ -65,6 +65,36 @@ func (r *Repository) DeleteProduct(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.CreateProductRequest) (models.Product, error) {
+	var product models.Product
+
+	err := r.db.QueryRow(ctx, `
+		UPDATE products
+		SET name = $1,
+		    description = NULLIF($2, ''),
+		    quantity = $3,
+		    unit = $4,
+		    expiration_date = $5
+		WHERE id = $6
+		RETURNING id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at`,
+		input.Name, input.Description, input.Quantity, input.Unit, input.ExpirationDate, id,
+	).Scan(
+		&product.ID,
+		&product.Name,
+		&product.Description,
+		&product.Quantity,
+		&product.Unit,
+		&product.ExpirationDate,
+		&product.CreatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Product{}, ErrNotFound
+	}
+
+	return product, err
+}
+
 func (r *Repository) ListRecipes(ctx context.Context) ([]models.Recipe, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT r.id, r.name, COALESCE(r.description, ''), ri.id, ri.product_name,

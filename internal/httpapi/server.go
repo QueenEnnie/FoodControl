@@ -33,6 +33,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /health", s.health)
 	s.mux.HandleFunc("GET /products", s.listProducts)
 	s.mux.HandleFunc("POST /products", s.createProduct)
+	s.mux.HandleFunc("PUT /products/{id}", s.updateProduct)
 	s.mux.HandleFunc("DELETE /products/{id}", s.deleteProduct)
 	s.mux.HandleFunc("GET /recipes", s.listRecipes)
 	s.mux.HandleFunc("POST /recipes", s.createRecipe)
@@ -89,6 +90,36 @@ func (s *Server) deleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) updateProduct(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var input models.CreateProductRequest
+
+	if err := readJSON(r, &input); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := repository.ValidateProduct(input); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	product, err := s.repo.UpdateProduct(r.Context(), id, input)
+	if errors.Is(err, repository.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "product not found")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update product")
+		return
+	}
+	writeJSON(w, http.StatusOK, product)
 }
 
 func (s *Server) listRecipes(w http.ResponseWriter, r *http.Request) {

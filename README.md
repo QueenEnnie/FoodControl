@@ -46,6 +46,7 @@ GET /health
 ```http
 GET /products
 POST /products
+PUT /products/{id}
 DELETE /products/{id}
 ```
 
@@ -60,6 +61,26 @@ Example product:
   "expiration_date": "2026-05-25T00:00:00Z"
 }
 ```
+
+Update an existing product:
+
+```http
+PUT /products/1
+Content-Type: application/json
+```
+
+```json
+{
+  "name": "milk",
+  "description": "2.5%",
+  "quantity": 0.5,
+  "unit": "l",
+  "expiration_date": "2026-05-25T00:00:00Z"
+}
+```
+
+Successful product updates return `200 OK` with the updated product.
+If the product does not exist, the API returns `404 Not Found`.
 
 ### Recipes
 
