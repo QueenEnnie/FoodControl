@@ -20,6 +20,18 @@ docker compose up --build
 The API listens on `http://localhost:8080`.
 PostgreSQL is exposed on `localhost:5433`.
 
+The local database is seeded with demo products and recipes, so you can call
+`GET /suggestions` right after startup and see which recipes can be cooked from
+the available inventory.
+
+If you already started the database before adding seed data, recreate the local
+volume:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
 ## Environment
 
 ```text
