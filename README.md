@@ -9,6 +9,7 @@ FoodControl is a Go backend service for tracking food inventory and checking whi
 - REST API built on the Go standard library `net/http`.
 - JSON request and response bodies.
 - Recipe availability checks that ignore expired products.
+- Soft deletion for products, so removed inventory is preserved in the database but hidden from API results and recipe availability checks.
 - Docker and Docker Compose setup for local deployment.
 
 ## Run With Docker
@@ -103,6 +104,16 @@ Content-Type: application/json
 
 Successful product updates return `200 OK` with the updated product.
 If the product does not exist, the API returns `404 Not Found`.
+
+Delete uses soft deletion:
+
+```http
+DELETE /products/1
+```
+
+Successful deletes return `204 No Content`. Soft-deleted products are preserved
+in the database with `deleted_at`, but they are hidden from product endpoints and
+ignored by recipe availability checks.
 
 ### Recipes
 

@@ -13,6 +13,7 @@ func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error)
 	rows, err := r.db.Query(ctx, `
 		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
 		FROM products
+		WHERE deleted_at IS NULL
 		ORDER BY expiration_date NULLS LAST, name`)
 	if err != nil {
 		return nil, err
@@ -36,7 +37,7 @@ func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, 
 	err := r.db.QueryRow(ctx, `
 		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
 		FROM products
-		WHERE id = $1`,
+		WHERE id = $1 AND deleted_at IS NULL`,
 		id,
 	).Scan(
 		&product.ID,
@@ -76,7 +77,7 @@ func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.C
 		    quantity = $3,
 		    unit = $4,
 		    expiration_date = $5
-		WHERE id = $6
+		WHERE id = $6 AND deleted_at IS NULL
 		RETURNING id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at`,
 		input.Name, input.Description, input.Quantity, input.Unit, input.ExpirationDate, id,
 	).Scan(
@@ -97,7 +98,12 @@ func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.C
 }
 
 func (r *Repository) DeleteProduct(ctx context.Context, id int64) error {
-	tag, err := r.db.Exec(ctx, `DELETE FROM products WHERE id = $1`, id)
+	tag, err := r.db.Exec(ctx, `
+		UPDATE products
+		SET deleted_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	)
 	if err != nil {
 		return err
 	}

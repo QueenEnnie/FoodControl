@@ -25,6 +25,7 @@ WITH ingredient_stock AS (
     LEFT JOIN products p 
         ON lower(p.name) = lower(ri.product_name) 
        AND lower(p.unit) = lower(ri.unit)
+       AND p.deleted_at IS NULL
     GROUP BY ri.recipe_id, ri.id, ri.product_name, ri.required_quantity, ri.unit
 ),
 recipe_calculations AS (
@@ -46,6 +47,7 @@ recipe_calculations AS (
         ) AS ingredients_json
     FROM recipes r
     LEFT JOIN ingredient_stock i ON i.recipe_id = r.id
+	%s
     GROUP BY r.id, r.name
 )
 SELECT recipe_id, recipe_name, can_cook, missing_count, ingredients_json
