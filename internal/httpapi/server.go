@@ -1,27 +1,36 @@
 package httpapi
 
 import (
+	"log/slog"
 	"net/http"
 
 	"food-control/internal/repository"
 )
 
 type Server struct {
-	repo *repository.Repository
-	mux  *http.ServeMux
+	repo    *repository.Repository
+	logger  *slog.Logger
+	mux     *http.ServeMux
+	handler http.Handler
 }
 
-func New(repo *repository.Repository) *Server {
+func New(repo *repository.Repository, logger *slog.Logger) *Server {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	server := &Server{
-		repo: repo,
-		mux:  http.NewServeMux(),
+		repo:   repo,
+		logger: logger,
+		mux:    http.NewServeMux(),
 	}
 	server.routes()
+	server.handler = server.withMiddleware(server.mux)
 	return server
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 func (s *Server) routes() {

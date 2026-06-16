@@ -10,6 +10,7 @@ FoodControl is a Go backend service for tracking food inventory and checking whi
 - JSON request and response bodies.
 - Recipe availability checks that ignore expired products.
 - Soft deletion for products, so removed inventory is preserved in the database but hidden from API results and recipe availability checks.
+- Structured JSON logs with request IDs, request logging middleware, and panic recovery middleware.
 - Docker and Docker Compose setup for local deployment.
 
 ## Run With Docker
@@ -20,6 +21,8 @@ docker compose up --build
 
 The API listens on `http://localhost:8080`.
 PostgreSQL is exposed on `localhost:5433`.
+The service writes structured JSON logs to stdout. In Docker, view them with
+`docker compose logs app`.
 
 The local database is seeded with demo products and recipes, so you can call
 `GET /suggestions` right after startup and see which recipes can be cooked from
