@@ -30,6 +30,10 @@ The local database is seeded with demo products and recipes, so you can call
 `GET /suggestions` right after startup and see which recipes can be cooked from
 the available inventory.
 
+Schema migrations live in `migrations/`. Demo data is kept separately in
+`seed/demo.sql`, so integration tests can apply only the schema and create their
+own isolated fixtures.
+
 If you already started the database before adding seed data, recreate the local
 volume:
 
