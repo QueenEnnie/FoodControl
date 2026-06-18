@@ -9,6 +9,8 @@ FoodControl is a Go backend service for tracking food inventory and checking whi
 - REST API built on the Go standard library `net/http`.
 - JSON request and response bodies.
 - Recipe availability checks that ignore expired products.
+- Atomic ingredient consumption with serializable transactions and row-level locking.
+- Expired and soon-to-expire inventory filtering with a configurable time window.
 - Soft deletion for products, so removed inventory is preserved in the database but hidden from API results and recipe availability checks.
 - Structured JSON logs with request IDs, request logging middleware, and panic recovery middleware.
 - Docker and Docker Compose setup for local deployment.
@@ -62,6 +64,7 @@ GET /health
 ```http
 GET /products
 GET /products/{id}
+GET /products/expiring?days=3
 POST /products
 PUT /products/{id}
 DELETE /products/{id}
@@ -87,6 +90,15 @@ GET /products/1
 
 Successful product lookups return `200 OK` with the product.
 If the product does not exist, the API returns `404 Not Found`.
+
+List expired products and products expiring within the next three days:
+
+```http
+GET /products/expiring?days=3
+```
+
+The `days` parameter is optional and defaults to `3`. It accepts values from
+`0` to `365`; `0` returns products expiring today or already expired.
 
 Update an existing product:
 
@@ -123,6 +135,7 @@ ignored by recipe availability checks.
 ```http
 GET /recipes
 POST /recipes
+POST /recipes/{id}/cook
 GET /recipes/{id}/availability
 GET /suggestions
 ```
@@ -147,3 +160,29 @@ Example recipe:
   ]
 }
 ```
+
+Cook a recipe and atomically consume its ingredients:
+
+```http
+POST /recipes/1/cook
+```
+
+```json
+{
+  "recipe_id": 1,
+  "recipe_name": "Pancakes",
+  "status": "cooked",
+  "consumed": [
+    {
+      "product_name": "milk",
+      "quantity": 0.5,
+      "unit": "l"
+    }
+  ]
+}
+```
+
+Cooking runs in a serializable PostgreSQL transaction and locks matching
+inventory rows. If ingredients are missing, expired, soft-deleted, or
+insufficient, the entire transaction is rolled back and the API returns
+`409 Conflict`.

@@ -32,6 +32,32 @@ func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error)
 	return products, rows.Err()
 }
 
+func (r *Repository) ListExpiringProducts(ctx context.Context, days int) ([]models.Product, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
+		FROM products
+		WHERE deleted_at IS NULL
+		  AND expiration_date IS NOT NULL
+		  AND expiration_date <= CURRENT_DATE + $1::integer
+		ORDER BY expiration_date, name`,
+		days,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []models.Product
+	for rows.Next() {
+		var product models.Product
+		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Quantity, &product.Unit, &product.ExpirationDate, &product.CreatedAt); err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, rows.Err()
+}
+
 func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, error) {
 	var product models.Product
 

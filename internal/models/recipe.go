@@ -36,3 +36,16 @@ type RecipeAvailability struct {
 	MissingCount int                      `json:"missing_count"`
 	Ingredients  []IngredientAvailability `json:"ingredients"`
 }
+
+type ConsumedIngredient struct {
+	ProductName string  `json:"product_name"`
+	Quantity    float64 `json:"quantity"`
+	Unit        string  `json:"unit"`
+}
+
+type CookRecipeResult struct {
+	RecipeID   int64                `json:"recipe_id"`
+	RecipeName string               `json:"recipe_name"`
+	Status     string               `json:"status"`
+	Consumed   []ConsumedIngredient `json:"consumed"`
+}

@@ -36,6 +36,30 @@ func (s *Server) createRecipe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, recipe)
 }
 
+func (s *Server) cookRecipe(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := s.repo.CookRecipe(r.Context(), id)
+	if errors.Is(err, repository.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "recipe not found")
+		return
+	}
+	if errors.Is(err, repository.ErrInsufficientIngredients) {
+		writeError(w, http.StatusConflict, "not enough ingredients to cook recipe")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to cook recipe")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (s *Server) recipeAvailability(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(r)
 	if err != nil {

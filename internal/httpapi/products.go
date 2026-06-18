@@ -3,15 +3,37 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"food-control/internal/models"
 	"food-control/internal/repository"
 )
 
+const defaultExpiringDays = 3
+
 func (s *Server) listProducts(w http.ResponseWriter, r *http.Request) {
 	products, err := s.repo.ListProducts(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list products")
+		return
+	}
+	writeJSON(w, http.StatusOK, products)
+}
+
+func (s *Server) listExpiringProducts(w http.ResponseWriter, r *http.Request) {
+	days := defaultExpiringDays
+	if rawDays := r.URL.Query().Get("days"); rawDays != "" {
+		parsedDays, err := strconv.Atoi(rawDays)
+		if err != nil || parsedDays < 0 || parsedDays > 365 {
+			writeError(w, http.StatusBadRequest, "days must be an integer between 0 and 365")
+			return
+		}
+		days = parsedDays
+	}
+
+	products, err := s.repo.ListExpiringProducts(r.Context(), days)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list expiring products")
 		return
 	}
 	writeJSON(w, http.StatusOK, products)

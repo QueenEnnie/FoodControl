@@ -1,6 +1,12 @@
 package postgres
 
-import "github.com/jackc/pgx/v5/pgxpool"
+import (
+	"food-control/internal/repository"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var _ repository.Store = (*Repository)(nil)
 
 type Repository struct {
 	db *pgxpool.Pool
