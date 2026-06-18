@@ -23,7 +23,7 @@ func (s *Server) createRecipe(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := repository.ValidateRecipe(input); err != nil {
+	if err := models.ValidateRecipe(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -1,17 +1,22 @@
 package repository
 
 import (
+	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"food-control/internal/models"
 )
 
 var ErrNotFound = errors.New("not found")
 
-type Repository struct {
-	db *pgxpool.Pool
-}
-
-func New(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+type Store interface {
+	ListProducts(ctx context.Context) ([]models.Product, error)
+	GetProduct(ctx context.Context, id int64) (models.Product, error)
+	CreateProduct(ctx context.Context, input models.CreateProductRequest) (models.Product, error)
+	UpdateProduct(ctx context.Context, id int64, input models.CreateProductRequest) (models.Product, error)
+	DeleteProduct(ctx context.Context, id int64) error
+	ListRecipes(ctx context.Context) ([]models.Recipe, error)
+	CreateRecipe(ctx context.Context, input models.CreateRecipeRequest) (models.Recipe, error)
+	GetRecipeAvailability(ctx context.Context, recipeID int64) (models.RecipeAvailability, error)
+	ListRecipeSuggestions(ctx context.Context) ([]models.RecipeAvailability, error)
 }

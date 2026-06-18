@@ -42,7 +42,7 @@ func (s *Server) createProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := repository.ValidateProduct(input); err != nil {
+	if err := models.ValidateProduct(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -68,7 +68,7 @@ func (s *Server) updateProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := repository.ValidateProduct(input); err != nil {
+	if err := models.ValidateProduct(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

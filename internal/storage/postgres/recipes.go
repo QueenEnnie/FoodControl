@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"food-control/internal/models"
+	"food-control/internal/repository"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -157,7 +158,7 @@ func (r *Repository) GetRecipeAvailability(ctx context.Context, recipeID int64) 
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.RecipeAvailability{}, ErrNotFound
+		return models.RecipeAvailability{}, repository.ErrNotFound
 	}
 	if err != nil {
 		return models.RecipeAvailability{}, err

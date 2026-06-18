@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"errors"
-	"food-control/internal/config"
-	"food-control/internal/db"
-	"food-control/internal/httpapi"
-	"food-control/internal/repository"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"food-control/internal/config"
+	"food-control/internal/db"
+	"food-control/internal/httpapi"
+	"food-control/internal/storage/postgres"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -29,7 +30,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	repo := repository.New(pool)
+	repo := postgres.New(pool)
 	api := httpapi.New(repo, logger)
 
 	server := &http.Server{

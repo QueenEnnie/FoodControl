@@ -8,13 +8,13 @@ import (
 )
 
 type Server struct {
-	repo    *repository.Repository
+	repo    repository.Store
 	logger  *slog.Logger
 	mux     *http.ServeMux
 	handler http.Handler
 }
 
-func New(repo *repository.Repository, logger *slog.Logger) *Server {
+func New(repo repository.Store, logger *slog.Logger) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}

@@ -1,13 +1,11 @@
-package repository
+package models
 
 import (
 	"fmt"
 	"strings"
-
-	"food-control/internal/models"
 )
 
-func ValidateProduct(input models.CreateProductRequest) error {
+func ValidateProduct(input CreateProductRequest) error {
 	if strings.TrimSpace(input.Name) == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -20,7 +18,7 @@ func ValidateProduct(input models.CreateProductRequest) error {
 	return nil
 }
 
-func ValidateRecipe(input models.CreateRecipeRequest) error {
+func ValidateRecipe(input CreateRecipeRequest) error {
 	if strings.TrimSpace(input.Name) == "" {
 		return fmt.Errorf("name is required")
 	}

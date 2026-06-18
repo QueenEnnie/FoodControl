@@ -1,10 +1,11 @@
-package repository
+package postgres
 
 import (
 	"context"
 	"errors"
 
 	"food-control/internal/models"
+	"food-control/internal/repository"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -50,7 +51,7 @@ func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, 
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.Product{}, ErrNotFound
+		return models.Product{}, repository.ErrNotFound
 	}
 
 	return product, err
@@ -91,7 +92,7 @@ func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.C
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.Product{}, ErrNotFound
+		return models.Product{}, repository.ErrNotFound
 	}
 
 	return product, err
@@ -108,7 +109,7 @@ func (r *Repository) DeleteProduct(ctx context.Context, id int64) error {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 	return nil
 }

@@ -1,21 +1,19 @@
-package repository
+package models
 
 import (
 	"strings"
 	"testing"
-
-	"food-control/internal/models"
 )
 
 func TestValidateProduct(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   models.CreateProductRequest
+		input   CreateProductRequest
 		wantErr string
 	}{
 		{
 			name: "valid product",
-			input: models.CreateProductRequest{
+			input: CreateProductRequest{
 				Name:     "milk",
 				Quantity: 1,
 				Unit:     "l",
@@ -23,7 +21,7 @@ func TestValidateProduct(t *testing.T) {
 		},
 		{
 			name: "zero quantity is valid",
-			input: models.CreateProductRequest{
+			input: CreateProductRequest{
 				Name:     "milk",
 				Quantity: 0,
 				Unit:     "l",
@@ -31,7 +29,7 @@ func TestValidateProduct(t *testing.T) {
 		},
 		{
 			name: "empty name",
-			input: models.CreateProductRequest{
+			input: CreateProductRequest{
 				Name:     " ",
 				Quantity: 1,
 				Unit:     "l",
@@ -40,7 +38,7 @@ func TestValidateProduct(t *testing.T) {
 		},
 		{
 			name: "negative quantity",
-			input: models.CreateProductRequest{
+			input: CreateProductRequest{
 				Name:     "milk",
 				Quantity: -1,
 				Unit:     "l",
@@ -49,7 +47,7 @@ func TestValidateProduct(t *testing.T) {
 		},
 		{
 			name: "empty unit",
-			input: models.CreateProductRequest{
+			input: CreateProductRequest{
 				Name:     "milk",
 				Quantity: 1,
 				Unit:     " ",
@@ -69,23 +67,23 @@ func TestValidateProduct(t *testing.T) {
 func TestValidateRecipe(t *testing.T) {
 	tests := []struct {
 		name    string
-		input   models.CreateRecipeRequest
+		input   CreateRecipeRequest
 		wantErr string
 	}{
 		{
 			name: "valid recipe",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: "Pancakes",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: "milk", RequiredQuantity: 0.3, Unit: "l"},
 				},
 			},
 		},
 		{
 			name: "empty recipe name",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: " ",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: "milk", RequiredQuantity: 0.3, Unit: "l"},
 				},
 			},
@@ -93,9 +91,9 @@ func TestValidateRecipe(t *testing.T) {
 		},
 		{
 			name: "ingredient without product name",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: "Pancakes",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: " ", RequiredQuantity: 0.3, Unit: "l"},
 				},
 			},
@@ -103,9 +101,9 @@ func TestValidateRecipe(t *testing.T) {
 		},
 		{
 			name: "ingredient with zero quantity",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: "Pancakes",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: "milk", RequiredQuantity: 0, Unit: "l"},
 				},
 			},
@@ -113,9 +111,9 @@ func TestValidateRecipe(t *testing.T) {
 		},
 		{
 			name: "ingredient with negative quantity",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: "Pancakes",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: "milk", RequiredQuantity: -0.3, Unit: "l"},
 				},
 			},
@@ -123,9 +121,9 @@ func TestValidateRecipe(t *testing.T) {
 		},
 		{
 			name: "ingredient without unit",
-			input: models.CreateRecipeRequest{
+			input: CreateRecipeRequest{
 				Name: "Pancakes",
-				Ingredients: []models.RecipeIngredient{
+				Ingredients: []RecipeIngredient{
 					{ProductName: "milk", RequiredQuantity: 0.3, Unit: " "},
 				},
 			},
