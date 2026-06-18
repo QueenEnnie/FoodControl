@@ -3,18 +3,16 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
-
-	"food-control/internal/repository"
 )
 
 type Server struct {
-	repo    repository.Store
+	repo    Repository
 	logger  *slog.Logger
 	mux     *http.ServeMux
 	handler http.Handler
 }
 
-func New(repo repository.Store, logger *slog.Logger) *Server {
+func New(repo Repository, logger *slog.Logger) *Server {
 	if logger == nil {
 		logger = slog.Default()
 	}
