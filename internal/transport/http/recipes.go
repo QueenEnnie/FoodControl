@@ -4,8 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"food-control/internal/models"
-	"food-control/internal/repository"
+	"food-control/internal/domain"
 )
 
 func (s *Server) listRecipes(w http.ResponseWriter, r *http.Request) {
@@ -18,12 +17,12 @@ func (s *Server) listRecipes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createRecipe(w http.ResponseWriter, r *http.Request) {
-	var input models.CreateRecipeRequest
+	var input domain.CreateRecipeRequest
 	if err := readJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := models.ValidateRecipe(input); err != nil {
+	if err := domain.ValidateRecipe(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -44,11 +43,11 @@ func (s *Server) cookRecipe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := s.repo.CookRecipe(r.Context(), id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, domain.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "recipe not found")
 		return
 	}
-	if errors.Is(err, repository.ErrInsufficientIngredients) {
+	if errors.Is(err, domain.ErrInsufficientIngredients) {
 		writeError(w, http.StatusConflict, "not enough ingredients to cook recipe")
 		return
 	}
@@ -68,7 +67,7 @@ func (s *Server) recipeAvailability(w http.ResponseWriter, r *http.Request) {
 	}
 
 	availability, err := s.repo.GetRecipeAvailability(r.Context(), id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, domain.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "recipe not found")
 		return
 	}

@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"food-control/internal/config"
-	"food-control/internal/db"
-	"food-control/internal/httpapi"
 	"food-control/internal/storage/postgres"
+	"food-control/internal/transport/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -63,7 +62,7 @@ func main() {
 func connectDatabase(ctx context.Context, databaseURL string, logger *slog.Logger) (*pgxpool.Pool, error) {
 	var err error
 	for attempt := 1; attempt <= 10; attempt++ {
-		pool, err := db.New(ctx, databaseURL)
+		pool, err := postgres.NewPool(ctx, databaseURL)
 		if err == nil {
 			return pool, nil
 		}

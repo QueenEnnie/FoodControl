@@ -5,8 +5,7 @@ import (
 	"errors"
 	"math"
 
-	"food-control/internal/models"
-	"food-control/internal/repository"
+	"food-control/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -25,8 +24,8 @@ type productStock struct {
 	quantity float64
 }
 
-func (r *Repository) CookRecipe(ctx context.Context, recipeID int64) (models.CookRecipeResult, error) {
-	var result models.CookRecipeResult
+func (r *Repository) CookRecipe(ctx context.Context, recipeID int64) (domain.CookRecipeResult, error) {
+	var result domain.CookRecipeResult
 	var err error
 
 	for attempt := 1; attempt <= maxCookAttempts; attempt++ {
@@ -36,41 +35,41 @@ func (r *Repository) CookRecipe(ctx context.Context, recipeID int64) (models.Coo
 		}
 	}
 
-	return models.CookRecipeResult{}, err
+	return domain.CookRecipeResult{}, err
 }
 
-func (r *Repository) cookRecipeOnce(ctx context.Context, recipeID int64) (models.CookRecipeResult, error) {
+func (r *Repository) cookRecipeOnce(ctx context.Context, recipeID int64) (domain.CookRecipeResult, error) {
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
 	if err != nil {
-		return models.CookRecipeResult{}, err
+		return domain.CookRecipeResult{}, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var recipeName string
 	err = tx.QueryRow(ctx, `SELECT name FROM recipes WHERE id = $1`, recipeID).Scan(&recipeName)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.CookRecipeResult{}, repository.ErrNotFound
+		return domain.CookRecipeResult{}, domain.ErrNotFound
 	}
 	if err != nil {
-		return models.CookRecipeResult{}, err
+		return domain.CookRecipeResult{}, err
 	}
 
 	ingredients, err := listRecipeIngredients(ctx, tx, recipeID)
 	if err != nil {
-		return models.CookRecipeResult{}, err
+		return domain.CookRecipeResult{}, err
 	}
 
-	result := models.CookRecipeResult{
+	result := domain.CookRecipeResult{
 		RecipeID:   recipeID,
 		RecipeName: recipeName,
 		Status:     "cooked",
-		Consumed:   make([]models.ConsumedIngredient, 0, len(ingredients)),
+		Consumed:   make([]domain.ConsumedIngredient, 0, len(ingredients)),
 	}
 
 	for _, ingredient := range ingredients {
 		stocks, err := lockProductStocks(ctx, tx, ingredient)
 		if err != nil {
-			return models.CookRecipeResult{}, err
+			return domain.CookRecipeResult{}, err
 		}
 
 		available := 0.0
@@ -78,7 +77,7 @@ func (r *Repository) cookRecipeOnce(ctx context.Context, recipeID int64) (models
 			available += stock.quantity
 		}
 		if available+1e-9 < ingredient.quantity {
-			return models.CookRecipeResult{}, repository.ErrInsufficientIngredients
+			return domain.CookRecipeResult{}, domain.ErrInsufficientIngredients
 		}
 
 		remaining := ingredient.quantity
@@ -94,12 +93,12 @@ func (r *Repository) cookRecipeOnce(ctx context.Context, recipeID int64) (models
 				WHERE id = $2`,
 				consumed, stock.id,
 			); err != nil {
-				return models.CookRecipeResult{}, err
+				return domain.CookRecipeResult{}, err
 			}
 			remaining -= consumed
 		}
 
-		result.Consumed = append(result.Consumed, models.ConsumedIngredient{
+		result.Consumed = append(result.Consumed, domain.ConsumedIngredient{
 			ProductName: ingredient.productName,
 			Quantity:    ingredient.quantity,
 			Unit:        ingredient.unit,
@@ -107,7 +106,7 @@ func (r *Repository) cookRecipeOnce(ctx context.Context, recipeID int64) (models
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return models.CookRecipeResult{}, err
+		return domain.CookRecipeResult{}, err
 	}
 	return result, nil
 }

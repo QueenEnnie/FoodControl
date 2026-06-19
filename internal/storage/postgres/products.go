@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"food-control/internal/models"
-	"food-control/internal/repository"
+	"food-control/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error) {
+func (r *Repository) ListProducts(ctx context.Context) ([]domain.Product, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
 		FROM products
@@ -21,9 +20,9 @@ func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error)
 	}
 	defer rows.Close()
 
-	var products []models.Product
+	var products []domain.Product
 	for rows.Next() {
-		var product models.Product
+		var product domain.Product
 		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Quantity, &product.Unit, &product.ExpirationDate, &product.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -32,7 +31,7 @@ func (r *Repository) ListProducts(ctx context.Context) ([]models.Product, error)
 	return products, rows.Err()
 }
 
-func (r *Repository) ListExpiringProducts(ctx context.Context, days int) ([]models.Product, error) {
+func (r *Repository) ListExpiringProducts(ctx context.Context, days int) ([]domain.Product, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
 		FROM products
@@ -47,9 +46,9 @@ func (r *Repository) ListExpiringProducts(ctx context.Context, days int) ([]mode
 	}
 	defer rows.Close()
 
-	var products []models.Product
+	var products []domain.Product
 	for rows.Next() {
-		var product models.Product
+		var product domain.Product
 		if err := rows.Scan(&product.ID, &product.Name, &product.Description, &product.Quantity, &product.Unit, &product.ExpirationDate, &product.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -58,8 +57,8 @@ func (r *Repository) ListExpiringProducts(ctx context.Context, days int) ([]mode
 	return products, rows.Err()
 }
 
-func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, error) {
-	var product models.Product
+func (r *Repository) GetProduct(ctx context.Context, id int64) (domain.Product, error) {
+	var product domain.Product
 
 	err := r.db.QueryRow(ctx, `
 		SELECT id, name, COALESCE(description, ''), quantity::float8, unit, expiration_date, created_at
@@ -77,14 +76,14 @@ func (r *Repository) GetProduct(ctx context.Context, id int64) (models.Product, 
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.Product{}, repository.ErrNotFound
+		return domain.Product{}, domain.ErrNotFound
 	}
 
 	return product, err
 }
 
-func (r *Repository) CreateProduct(ctx context.Context, input models.CreateProductRequest) (models.Product, error) {
-	var product models.Product
+func (r *Repository) CreateProduct(ctx context.Context, input domain.CreateProductRequest) (domain.Product, error) {
+	var product domain.Product
 	err := r.db.QueryRow(ctx, `
 		INSERT INTO products (name, description, quantity, unit, expiration_date)
 		VALUES ($1, NULLIF($2, ''), $3, $4, $5)
@@ -94,8 +93,8 @@ func (r *Repository) CreateProduct(ctx context.Context, input models.CreateProdu
 	return product, err
 }
 
-func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.CreateProductRequest) (models.Product, error) {
-	var product models.Product
+func (r *Repository) UpdateProduct(ctx context.Context, id int64, input domain.CreateProductRequest) (domain.Product, error) {
+	var product domain.Product
 
 	err := r.db.QueryRow(ctx, `
 		UPDATE products
@@ -118,7 +117,7 @@ func (r *Repository) UpdateProduct(ctx context.Context, id int64, input models.C
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.Product{}, repository.ErrNotFound
+		return domain.Product{}, domain.ErrNotFound
 	}
 
 	return product, err
@@ -135,7 +134,7 @@ func (r *Repository) DeleteProduct(ctx context.Context, id int64) error {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return repository.ErrNotFound
+		return domain.ErrNotFound
 	}
 	return nil
 }

@@ -21,6 +21,15 @@ FoodControl is a Go backend service for tracking food inventory and checking whi
 docker compose up --build
 ```
 
+## Project Structure
+
+- cmd/food-control/: application entrypoint and dependency wiring.
+- internal/domain/: domain models, validation, and shared errors.
+- internal/transport/http/: REST handlers, middleware, and repository interfaces.
+- internal/storage/postgres/: PostgreSQL pool and repository implementation.
+- migrations/: database schema migrations.
+- seed/: demo data for local development.
+
 The API listens on `http://localhost:8080`.
 PostgreSQL is exposed on `localhost:5433`.
 The service writes structured JSON logs to stdout. In Docker, view them with

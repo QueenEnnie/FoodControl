@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"food-control/internal/models"
-	"food-control/internal/repository"
+	"food-control/internal/domain"
 )
 
 const defaultExpiringDays = 3
@@ -47,7 +46,7 @@ func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	product, err := s.repo.GetProduct(r.Context(), id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, domain.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "product not found")
 		return
 	}
@@ -59,12 +58,12 @@ func (s *Server) getProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createProduct(w http.ResponseWriter, r *http.Request) {
-	var input models.CreateProductRequest
+	var input domain.CreateProductRequest
 	if err := readJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := models.ValidateProduct(input); err != nil {
+	if err := domain.ValidateProduct(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -84,19 +83,19 @@ func (s *Server) updateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input models.CreateProductRequest
+	var input domain.CreateProductRequest
 
 	if err := readJSON(r, &input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := models.ValidateProduct(input); err != nil {
+	if err := domain.ValidateProduct(input); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	product, err := s.repo.UpdateProduct(r.Context(), id, input)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, domain.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "product not found")
 		return
 	}
@@ -115,7 +114,7 @@ func (s *Server) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.repo.DeleteProduct(r.Context(), id)
-	if errors.Is(err, repository.ErrNotFound) {
+	if errors.Is(err, domain.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "product not found")
 		return
 	}

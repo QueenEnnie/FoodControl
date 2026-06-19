@@ -1,4 +1,4 @@
-package models
+package domain
 
 type Recipe struct {
 	ID          int64              `json:"id"`

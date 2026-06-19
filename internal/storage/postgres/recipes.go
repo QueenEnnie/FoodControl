@@ -6,8 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"food-control/internal/models"
-	"food-control/internal/repository"
+	"food-control/internal/domain"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -55,7 +54,7 @@ SELECT recipe_id, recipe_name, can_cook, missing_count, ingredients_json
 FROM recipe_calculations
 `
 
-func (r *Repository) ListRecipes(ctx context.Context) ([]models.Recipe, error) {
+func (r *Repository) ListRecipes(ctx context.Context) ([]domain.Recipe, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT r.id, r.name, COALESCE(r.description, ''), ri.id, ri.product_name,
 		       ri.required_quantity::float8, ri.unit
@@ -67,7 +66,7 @@ func (r *Repository) ListRecipes(ctx context.Context) ([]models.Recipe, error) {
 	}
 	defer rows.Close()
 
-	recipesByID := make(map[int64]*models.Recipe)
+	recipesByID := make(map[int64]*domain.Recipe)
 	var order []int64
 	for rows.Next() {
 		var recipeID int64
@@ -80,12 +79,12 @@ func (r *Repository) ListRecipes(ctx context.Context) ([]models.Recipe, error) {
 		}
 		recipe, ok := recipesByID[recipeID]
 		if !ok {
-			recipe = &models.Recipe{ID: recipeID, Name: recipeName, Description: description}
+			recipe = &domain.Recipe{ID: recipeID, Name: recipeName, Description: description}
 			recipesByID[recipeID] = recipe
 			order = append(order, recipeID)
 		}
 		if ingredientID != nil {
-			recipe.Ingredients = append(recipe.Ingredients, models.RecipeIngredient{
+			recipe.Ingredients = append(recipe.Ingredients, domain.RecipeIngredient{
 				ID:               *ingredientID,
 				RecipeID:         recipeID,
 				ProductName:      *productName,
@@ -98,21 +97,21 @@ func (r *Repository) ListRecipes(ctx context.Context) ([]models.Recipe, error) {
 		return nil, err
 	}
 
-	recipes := make([]models.Recipe, 0, len(order))
+	recipes := make([]domain.Recipe, 0, len(order))
 	for _, id := range order {
 		recipes = append(recipes, *recipesByID[id])
 	}
 	return recipes, nil
 }
 
-func (r *Repository) CreateRecipe(ctx context.Context, input models.CreateRecipeRequest) (models.Recipe, error) {
+func (r *Repository) CreateRecipe(ctx context.Context, input domain.CreateRecipeRequest) (domain.Recipe, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
-		return models.Recipe{}, err
+		return domain.Recipe{}, err
 	}
 	defer tx.Rollback(ctx)
 
-	var recipe models.Recipe
+	var recipe domain.Recipe
 	err = tx.QueryRow(ctx, `
 		INSERT INTO recipes (name, description)
 		VALUES ($1, NULLIF($2, ''))
@@ -120,11 +119,11 @@ func (r *Repository) CreateRecipe(ctx context.Context, input models.CreateRecipe
 		input.Name, input.Description,
 	).Scan(&recipe.ID, &recipe.Name, &recipe.Description)
 	if err != nil {
-		return models.Recipe{}, err
+		return domain.Recipe{}, err
 	}
 
 	for _, ingredient := range input.Ingredients {
-		var created models.RecipeIngredient
+		var created domain.RecipeIngredient
 		err := tx.QueryRow(ctx, `
 			INSERT INTO recipe_ingredients (recipe_id, product_name, required_quantity, unit)
 			VALUES ($1, $2, $3, $4)
@@ -132,21 +131,21 @@ func (r *Repository) CreateRecipe(ctx context.Context, input models.CreateRecipe
 			recipe.ID, ingredient.ProductName, ingredient.RequiredQuantity, ingredient.Unit,
 		).Scan(&created.ID, &created.RecipeID, &created.ProductName, &created.RequiredQuantity, &created.Unit)
 		if err != nil {
-			return models.Recipe{}, err
+			return domain.Recipe{}, err
 		}
 		recipe.Ingredients = append(recipe.Ingredients, created)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return models.Recipe{}, err
+		return domain.Recipe{}, err
 	}
 	return recipe, nil
 }
 
-func (r *Repository) GetRecipeAvailability(ctx context.Context, recipeID int64) (models.RecipeAvailability, error) {
+func (r *Repository) GetRecipeAvailability(ctx context.Context, recipeID int64) (domain.RecipeAvailability, error) {
 	query := fmt.Sprintf(recipeAvailabilityQuery, "WHERE r.id = $1")
 
-	var availability models.RecipeAvailability
+	var availability domain.RecipeAvailability
 	var ingredientsJSON []byte
 
 	err := r.db.QueryRow(ctx, query, recipeID).Scan(
@@ -158,20 +157,20 @@ func (r *Repository) GetRecipeAvailability(ctx context.Context, recipeID int64) 
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.RecipeAvailability{}, repository.ErrNotFound
+		return domain.RecipeAvailability{}, domain.ErrNotFound
 	}
 	if err != nil {
-		return models.RecipeAvailability{}, err
+		return domain.RecipeAvailability{}, err
 	}
 
 	if err := json.Unmarshal(ingredientsJSON, &availability.Ingredients); err != nil {
-		return models.RecipeAvailability{}, err
+		return domain.RecipeAvailability{}, err
 	}
 
 	return availability, nil
 }
 
-func (r *Repository) ListRecipeSuggestions(ctx context.Context) ([]models.RecipeAvailability, error) {
+func (r *Repository) ListRecipeSuggestions(ctx context.Context) ([]domain.RecipeAvailability, error) {
 	query := fmt.Sprintf(recipeAvailabilityQuery, "") + " ORDER BY can_cook DESC, missing_count ASC, recipe_name"
 
 	rows, err := r.db.Query(ctx, query)
@@ -180,9 +179,9 @@ func (r *Repository) ListRecipeSuggestions(ctx context.Context) ([]models.Recipe
 	}
 	defer rows.Close()
 
-	var suggestions []models.RecipeAvailability
+	var suggestions []domain.RecipeAvailability
 	for rows.Next() {
-		var availability models.RecipeAvailability
+		var availability domain.RecipeAvailability
 		var ingredientsJSON []byte
 
 		err := rows.Scan(
