@@ -1,64 +1,78 @@
 # FoodControl
 
-FoodControl is a Go backend service for tracking food inventory and checking which recipes can be cooked from available products.
+[English version](README_en.md)
 
-## Features
+FoodControl - backend-сервис на Go для учёта запасов продуктов и проверки рецептов, которые можно приготовить из имеющихся ингредиентов.
 
-- PostgreSQL schema for products, recipes, and recipe ingredients.
-- Database access through `pgx/v5` and `pgxpool`.
-- REST API built on the Go standard library `net/http`.
-- JSON request and response bodies.
-- Recipe availability checks that ignore expired products.
-- Atomic ingredient consumption with serializable transactions and row-level locking.
-- Expired and soon-to-expire inventory filtering with a configurable time window.
-- Soft deletion for products, so removed inventory is preserved in the database but hidden from API results and recipe availability checks.
-- Structured JSON logs with request IDs, request logging middleware, and panic recovery middleware.
-- Docker and Docker Compose setup for local deployment.
+## Возможности
 
-## Run With Docker
+- Схема PostgreSQL для продуктов, рецептов и ингредиентов рецептов.
+- Работа с базой данных через `pgx/v5` и `pgxpool`.
+- REST API на стандартной библиотеке Go `net/http`.
+- Тела запросов и ответов в формате JSON.
+- Проверка доступности рецептов без учёта просроченных продуктов.
+- Атомарное списание ингредиентов с помощью сериализуемых транзакций и блокировки строк.
+- Фильтрация просроченных и скоро истекающих продуктов с настраиваемым временным интервалом.
+- Мягкое удаление продуктов: удалённые записи сохраняются в базе данных, но скрываются из API и не учитываются при проверке рецептов.
+- Структурированные JSON-логи с идентификаторами запросов, middleware для логирования запросов и восстановления после panic.
+- Docker и Docker Compose для локального запуска.
+
+## Запуск с Docker
 
 ```bash
 docker compose up --build
 ```
 
-## Project Structure
+## Структура проекта
 
-- cmd/food-control/: application entrypoint and dependency wiring.
-- internal/domain/: domain models, validation, and shared errors.
-- internal/transport/http/: REST handlers, middleware, and repository interfaces.
-- internal/storage/postgres/: PostgreSQL pool and repository implementation.
-- migrations/: database schema migrations.
-- seed/: demo data for local development.
+- `cmd/food-control/`: точка входа приложения и сборка зависимостей.
+- `internal/domain/`: доменные модели, валидация и общие ошибки.
+- `internal/transport/http/`: REST-обработчики, middleware и интерфейсы репозиториев.
+- `internal/storage/postgres/`: пул подключений PostgreSQL и реализация репозитория.
+- `migrations/`: миграции схемы базы данных.
+- `seed/`: демонстрационные данные для локальной разработки.
 
-The API listens on `http://localhost:8080`.
-PostgreSQL is exposed on `localhost:5433`.
-The service writes structured JSON logs to stdout. In Docker, view them with
-`docker compose logs app`.
+API доступен по адресу `http://localhost:8080`.
+PostgreSQL доступен на `localhost:5433`.
+Сервис выводит структурированные JSON-логи в stdout. При запуске в Docker их можно посмотреть командой:
 
-The local database is seeded with demo products and recipes, so you can call
-`GET /suggestions` right after startup and see which recipes can be cooked from
-the available inventory.
+```bash
+docker compose logs app
+```
 
-Schema migrations live in `migrations/`. Demo data is kept separately in
-`seed/demo.sql`, so integration tests can apply only the schema and create their
-own isolated fixtures.
+Локальная база данных заполняется демонстрационными продуктами и рецептами. Поэтому сразу после запуска можно вызвать `GET /suggestions` и увидеть, какие рецепты доступны для приготовления из текущих запасов.
 
-If you already started the database before adding seed data, recreate the local
-volume:
+Миграции схемы находятся в `migrations/`. Демонстрационные данные хранятся отдельно в `seed/demo.sql`, поэтому интеграционные тесты применяют только схему и создают собственные изолированные данные.
+
+## Тесты
+
+Запуск модульных тестов:
+
+```bash
+go test ./...
+```
+
+Интеграционные тесты репозитория используют Testcontainers: запускают изолированный контейнер PostgreSQL 16, применяют миграции схемы и создают тестовые данные. Для запуска должен работать Docker; локальные демонстрационные данные не загружаются.
+
+```bash
+go test -tags=integration ./internal/storage/postgres
+```
+
+Если база данных уже запускалась до добавления демонстрационных данных, пересоздайте локальный volume:
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
 
-## Environment
+## Переменные окружения
 
 ```text
 HTTP_ADDR=:8080
 DATABASE_URL=postgres://fcuser:fcpass@localhost:5433/fooddb
 ```
 
-Inside Docker Compose, the application uses:
+Внутри Docker Compose приложение использует:
 
 ```text
 DATABASE_URL=postgres://fcuser:fcpass@db:5432/fooddb
@@ -66,13 +80,13 @@ DATABASE_URL=postgres://fcuser:fcpass@db:5432/fooddb
 
 ## API
 
-### Health
+### Проверка состояния
 
 ```http
 GET /health
 ```
 
-### Products
+### Продукты
 
 ```http
 GET /products
@@ -83,7 +97,7 @@ PUT /products/{id}
 DELETE /products/{id}
 ```
 
-Example product:
+Пример продукта:
 
 ```json
 {
@@ -95,25 +109,24 @@ Example product:
 }
 ```
 
-Get one product:
+Получение одного продукта:
 
 ```http
 GET /products/1
 ```
 
-Successful product lookups return `200 OK` with the product.
-If the product does not exist, the API returns `404 Not Found`.
+При успешном поиске API возвращает продукт со статусом `200 OK`.
+Если продукт не существует, API возвращает `404 Not Found`.
 
-List expired products and products expiring within the next three days:
+Получение просроченных продуктов и продуктов, срок годности которых истекает в течение следующих трёх дней:
 
 ```http
 GET /products/expiring?days=3
 ```
 
-The `days` parameter is optional and defaults to `3`. It accepts values from
-`0` to `365`; `0` returns products expiring today or already expired.
+Параметр `days` необязателен, его значение по умолчанию равно `3`. Допустимы значения от `0` до `365`; при `0` возвращаются продукты, которые уже просрочены или истекают сегодня.
 
-Update an existing product:
+Обновление существующего продукта:
 
 ```http
 PUT /products/1
@@ -130,20 +143,18 @@ Content-Type: application/json
 }
 ```
 
-Successful product updates return `200 OK` with the updated product.
-If the product does not exist, the API returns `404 Not Found`.
+При успешном обновлении API возвращает обновлённый продукт со статусом `200 OK`.
+Если продукт не существует, API возвращает `404 Not Found`.
 
-Delete uses soft deletion:
+Для удаления используется мягкое удаление:
 
 ```http
 DELETE /products/1
 ```
 
-Successful deletes return `204 No Content`. Soft-deleted products are preserved
-in the database with `deleted_at`, but they are hidden from product endpoints and
-ignored by recipe availability checks.
+При успешном удалении API возвращает `204 No Content`. Мягко удалённые продукты сохраняются в базе данных с заполненным полем `deleted_at`, но скрываются из эндпоинтов продуктов и не учитываются при проверке доступности рецептов.
 
-### Recipes
+### Рецепты
 
 ```http
 GET /recipes
@@ -153,7 +164,7 @@ GET /recipes/{id}/availability
 GET /suggestions
 ```
 
-Example recipe:
+Пример рецепта:
 
 ```json
 {
@@ -174,7 +185,7 @@ Example recipe:
 }
 ```
 
-Cook a recipe and atomically consume its ingredients:
+Приготовление рецепта с атомарным списанием ингредиентов:
 
 ```http
 POST /recipes/1/cook
@@ -195,7 +206,4 @@ POST /recipes/1/cook
 }
 ```
 
-Cooking runs in a serializable PostgreSQL transaction and locks matching
-inventory rows. If ingredients are missing, expired, soft-deleted, or
-insufficient, the entire transaction is rolled back and the API returns
-`409 Conflict`.
+Приготовление выполняется в сериализуемой транзакции PostgreSQL с блокировкой подходящих строк запасов. Если ингредиенты отсутствуют, просрочены, мягко удалены или их недостаточно, вся транзакция откатывается, а API возвращает `409 Conflict`.
